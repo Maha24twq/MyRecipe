@@ -9,61 +9,71 @@ import SwiftUI
 struct RecipeView: View {
 
     @State private var showAddRecipeSheet = false
-    @ObservedObject private var recipeViewModel = RecipeViewModel()
-
-   
-    @State private var recipes: [Recipe] = []
+    @StateObject private var recipeViewModel = RecipeViewModel()
 
     var body: some View {
-        if recipeViewModel.recipes.isEmpty {
-            NavigationStack {
+        NavigationStack {
+            if recipeViewModel.recipes.isEmpty {
                 ZStack {
                     Circle()
                         .stroke(lineWidth: 30.0)
                         .foregroundColor(Color("RecipeOrangi"))
                         .frame(width: 300, height: 300)
+                    
                     Image(systemName: "fork.knife")
                         .foregroundColor(Color("RecipeOrangi"))
                         .font(.system(size: 160))
                 }
                 .padding(.bottom, 30)
 
-                Text("There is no recipe yet.")
-                    .font(.title)
-                    .fontWeight(.bold)
-
-                Text("Please add your recipe")
-                    .padding(.top, 1)
-                    .navigationTitle("Food recipe")
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarTrailing) {
-                            NavigationLink(destination: AddRecipe(recipeViewModel: recipeViewModel)) {
-                                Image(systemName: "plus")
-                                    .foregroundColor(Color.red)
-                            }
+                VStack {
+                    Text("There is no recipe yet.")
+                        .font(.title)
+                        .fontWeight(.bold)
+                    
+                    Text("Please add your recipe")
+                        .padding(.top, 1)
+                }
+                .navigationTitle("Food Recipe")
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        NavigationLink(destination: AddRecipe(recipeViewModel: recipeViewModel)) {
+                            Image(systemName: "plus")
+                                .foregroundColor(.red)
                         }
                     }
-                    .navigationBarBackButtonHidden(true)
-                    .toolbarBackgroundVisibility(.visible)
-            }
-        } else {
-            NavigationStack {
+                }
+                .navigationBarBackButtonHidden(true)
+                .toolbarBackground(.visible, for: .navigationBar)
+            } else {
                 List {
                     ForEach(recipeViewModel.recipes) { recipe in
                         ZStack(alignment: .bottomLeading) {
-                            Image("salad_image")
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity, minHeight: 150)
-                                .clipped()
-
-                            LinearGradient(
-                                gradient: Gradient(colors: [.black.opacity(0.6), .clear]),
-                                startPoint: .bottom,
-                                endPoint: .center
-                            )
-                            .frame(height: 300)
-
+                            if let image = recipe.image {
+                                
+                                Image(uiImage: image)
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, minHeight: 150)
+                                    .clipped()
+                            }
+                            else {
+                                
+                                Rectangle()
+                                
+                                    .fill(.red)
+                                    .scaledToFill()
+                                    .frame(maxWidth: .infinity, minHeight: 150)
+                                    //.clipped()
+                            }
+                                LinearGradient(
+                                    gradient: Gradient(colors: [.black.opacity(0.6), .clear]),
+                                    startPoint: .bottom,
+                                    endPoint: .center
+                                )
+                                .frame(height: 300)
+                            
+                            
                             VStack(alignment: .leading) {
                                 Text(recipe.name)
                                     .font(.headline)
@@ -73,8 +83,7 @@ struct RecipeView: View {
 
                                 Text(recipe.description)
                                     .font(.subheadline)
-                      .foregroundColor(.white.opacity(0.7))
-                                    .foregroundColor(.white)
+                                    .foregroundColor(.white.opacity(0.7))
                                     .padding(.horizontal, 12)
                             }
                             .padding()
@@ -89,7 +98,7 @@ struct RecipeView: View {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         NavigationLink(destination: AddRecipe(recipeViewModel: recipeViewModel)) {
                             Image(systemName: "plus")
-                                .foregroundColor(Color.red)
+                                .foregroundColor(.red)
                         }
                     }
                 }
@@ -102,4 +111,3 @@ struct RecipeView: View {
 #Preview {
     RecipeView()
 }
-

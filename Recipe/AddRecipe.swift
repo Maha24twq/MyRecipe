@@ -124,6 +124,7 @@ struct AddRecipe: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
                     // Call addRecipe and dismiss the view
+                   // RecipeViewModel.recipeImage = selectedImage
                     recipeViewModel.addRecipe()
                     presentationMode.wrappedValue.dismiss()
                 }) {

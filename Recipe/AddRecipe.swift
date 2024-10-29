@@ -7,17 +7,18 @@
 
 import SwiftUI
 import PhotosUI
+
 struct AddRecipe: View {
     @ObservedObject var recipeViewModel: RecipeViewModel
     @Environment(\.presentationMode) var presentationMode
-    
+
     @State private var showIngredientPop: Bool = false
     @State private var ingredientName: String = ""
     @State private var selectedMeasurement: String = "Spoon"
     @State private var serving: Int = 1
     @State private var selectedImage: UIImage? // New state variable for the image
     @State private var showImagePicker: Bool = false // State variable to control image picker presentation
-
+    @State private var selectedItem: PhotosPickerItem? = nil // State for PhotosPicker
 
     var body: some View {
         VStack {
@@ -47,8 +48,21 @@ struct AddRecipe: View {
             }
             .padding(.vertical, 25)
             .onTapGesture {
-                // Trigger image picker when the rectangle is tapped
                 showImagePicker.toggle()
+            }
+            .sheet(isPresented: $showImagePicker) {
+                PhotosPicker(selection: $selectedItem) {
+                    Text("Select a photo")
+                }
+                .onChange(of: selectedItem) { newItem in
+                    Task {
+                        if let data = try? await newItem?.loadTransferable(type: Data.self),
+                           let uiImage = UIImage(data: data) {
+                            selectedImage = uiImage
+                        }
+                        showImagePicker = false
+                    }
+                }
             }
             // Title field
             VStack(alignment: .leading, spacing: 8) {
@@ -88,7 +102,6 @@ struct AddRecipe: View {
             }
             .padding(.horizontal)
             
-            
             ForEach(recipeViewModel.ingredients) { ingredient in
                 HStack {
                     Text("\(ingredient.serving)")
@@ -123,8 +136,6 @@ struct AddRecipe: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button(action: {
-                    // Call addRecipe and dismiss the view
-                   // RecipeViewModel.recipeImage = selectedImage
                     recipeViewModel.addRecipe()
                     presentationMode.wrappedValue.dismiss()
                 }) {
@@ -136,11 +147,6 @@ struct AddRecipe: View {
         }
         .navigationBarBackButtonHidden(true)
         .toolbarBackgroundVisibility(.visible)
-        
-        .sheet(isPresented: $showImagePicker) { // Show the image picker when needed
-            ImagePicker(selectedImage: $selectedImage)
-        }
-        
         .overlay(
             Group {
                 if showIngredientPop {
@@ -157,7 +163,6 @@ struct AddRecipe: View {
                             Text("Measurement").font(.headline)
                             Spacer()
                         }
-                        // Measurement buttons
                         HStack {
                             Button(action: { selectedMeasurement = "Spoon" }) {
                                 Text("🥄 Spoon")
@@ -174,7 +179,6 @@ struct AddRecipe: View {
                                     .cornerRadius(8)
                             }
                         }
-                        // Serving input
                         HStack {
                             Text("Serving").font(.headline)
                             Spacer()
@@ -191,19 +195,15 @@ struct AddRecipe: View {
                             }
                             Text(selectedMeasurement).padding(.horizontal).background(Color.orange).cornerRadius(8)
                         }
-                        // Cancel and Add buttons
                         HStack {
                             Button(action: { showIngredientPop = false }) {
                                 Text("Cancel").foregroundColor(.red).padding().frame(maxWidth: .infinity).background(Color(.systemGray6)).cornerRadius(8)
                             }
                             Button(action: {
-                              
                                 recipeViewModel.addIngredient(name: ingredientName, measurement: selectedMeasurement, serving: serving)
-                                
                                 ingredientName = ""
                                 selectedMeasurement = "Spoon"
                                 serving = 1
-
                                 showIngredientPop = false
                             }) {
                                 Text("Add")
@@ -213,7 +213,6 @@ struct AddRecipe: View {
                                     .background(Color.orange)
                                     .cornerRadius(8)
                             }
-
                         }
                     }
                     .padding()
@@ -228,47 +227,6 @@ struct AddRecipe: View {
     }
 }
 
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var selectedImage: UIImage?
-
-    func makeUIViewController(context: Context) -> PHPickerViewController {
-        var config = PHPickerConfiguration()
-        config.filter = .images
-        config.selectionLimit = 1
-
-        let picker = PHPickerViewController(configuration: config)
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: PHPickerViewController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    class Coordinator: NSObject, PHPickerViewControllerDelegate {
-        let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            picker.dismiss(animated: true)
-
-            guard let provider = results.first?.itemProvider, provider.canLoadObject(ofClass: UIImage.self) else {
-                return
-            }
-
-            provider.loadObject(ofClass: UIImage.self) { image, _ in
-                DispatchQueue.main.async {
-                    self.parent.selectedImage = image as? UIImage
-                }
-            }
-        }
-    }
-}
 #Preview {
     AddRecipe(recipeViewModel: RecipeViewModel())
 }
